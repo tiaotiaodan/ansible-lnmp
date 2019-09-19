@@ -1,0 +1,22 @@
+---
+- name: install nginx, php and www
+  hosts: web1
+  remote_user: root
+
+  roles:
+    - role: common
+    - role: nginx
+      tags: ["nginx"]
+    - role: php
+      tags: ["php"]
+    - role: www
+      tags: ["www"]
+
+
+- name: install mysql
+  hosts: mysql
+  remote_user: root
+
+  roles:
+    - role: mysql
+      tags: ["mysql"]

@@ -1,0 +1,145 @@
+---
+- name: Remove shell yum 
+  yum: name={{ item }} state=absent
+  with_items:
+    - mariadb-libs
+    - boost-thread
+    - boost-system
+    - boost-date-time
+
+
+- name: Install mysql deps
+  yum: name={{ item }} state=latest
+  with_items:
+    - cmake
+    - make
+    - gcc
+    - gcc-c++
+    - bison
+    - ncurses
+    - ncurses-devel
+
+- name: mkdir /tools
+  file:
+    dest: /tools
+    state: directory
+    
+- name: mkdir -p /usr/local/mysql/
+  file:
+    dest: /usr/local/mysql/
+    state: directory
+
+- name: mkdir -p /data/mysql/
+  file:
+    dest: /data/mysql/
+    state: directory
+    
+- name: mkdir -p /usr/local/boost
+  file:
+    dest: /usr/local/boost
+    state: directory
+    
+
+- name: Copy boost source pkg 
+  copy:
+    src: boost-{{ boost_version }}.tar.gz
+    dest: /tools
+    force: yes
+
+- name: Copy mysql source pkg
+  copy:
+    src: mysql-{{ mysql_version }}.tar.gz
+    dest: /tools
+    force: yes
+
+- name: Creating Users Group
+  group:
+    name: mysql
+    gid: 1000
+    state: present 
+
+- name: Creating Users
+  user:
+    name: mysql
+    groups: mysql
+    create_home: no
+    uid: 1000
+    state: present
+    shell: /sbin/nologin
+
+- name:  Install boost
+  shell: cd /tools && tar -zxf boost-{{ boost_version }}.tar.gz  -C /usr/local/boost 
+ 
+- name: Install mysql
+  shell: cd /tools && tar -zxf mysql-{{ mysql_version }}.tar.gz  && cd  mysql-{{ mysql_version }} &&
+        cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/data/mysql -DDOWNLOAD_BOOST=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_FEDERATED_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_PARTITION_STORAGE_ENGINE=1 -DWITH_READLINE=1 -DMYSQL_UNIX_ADDR=/data/mysql/mysql.sock -DMYSQL_TCP_PORT=3306 -DENABLED_LOCAL_INFILE=1 -DENABLE_DTRACE=0 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DMYSQL_USER=mysql -DWITH_BOOST=/usr/local/boost  &&
+        make -j4 && make install
+
+- name: Initialization mysql
+  shell: /usr/local/mysql/bin/mysqld --initialize-insecure --user=mysql --basedir=/usr/local/mysql --datadir=/data/mysql 
+  
+- name: Change ownership of mysql installation
+  file:
+    path: /usr/local/mysql/
+    owner: mysql
+    group: mysql
+    state: directory
+    recurse: yes
+
+- name: Change ownership of mysql data installation
+  file:
+    path: /data/mysql/
+    owner: mysql
+    group: mysql
+    state: directory
+    recurse: yes
+
+- name: Copy mysql config  file   My.cnf
+  copy:
+    src: my.cnf
+    dest: /etc/my.cnf
+    force: yes
+  notify: restart mysql
+ 
+- name: Copy mysql config file mysql
+  synchronize:
+    src: mysql
+    dest: /etc/init.d/
+    dirs: no
+    mode: push
+    delete: yes
+    rsync_path: /usr/bin/rsync
+    rsync_opts: -avz
+  notify: restart mysql
+
+- name: Copy mysql config file mysql.server
+  synchronize:
+    src: mysql.server
+    dest: /usr/lib/systemd/system/
+    dirs: no
+    mode: push
+    delete: yes
+    rsync_path: /usr/bin/rsync
+    rsync_opts: -avz
+  notify: restart mysql
+
+
+- name: Increase MySQL execution privileges
+  shell: /usr/bin/chmod +x /etc/init.d/mysql  && /usr/bin/chmod +x /usr/lib/systemd/system/mysql.server 
+
+ 
+- name: system reload file mysql
+  shell: /bin/systemctl daemon-reload 
+
+- name:   echo mysql bin file 
+  shell: echo 'PATH=/usr/local/mysql/bin:$PATH' >> /etc/profile 
+
+- name: reload profile file
+  shell: /bin/bash /etc/profile
+
+- name:  systemctl start mysql  service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+

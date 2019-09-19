@@ -1,0 +1,20 @@
+---
+#nginx
+nginx_version: 1.16.1
+http_port: 80
+server_name: test-www.scajy.cn
+
+#php
+php_version: 7.2.6
+
+#mysql
+mysql_version: 5.7.25
+boost_version: 1.59.0
+
+
+#www
+db_host: 192.168.200.135 
+db_port: 3306
+db_name: www
+db_user: www
+db_password: My@admin63!

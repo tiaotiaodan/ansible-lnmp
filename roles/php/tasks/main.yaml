@@ -1,0 +1,67 @@
+---
+- name: Install php deps
+  yum: name={{ item }} state=latest
+  with_items:
+    - libmcrypt
+    - libmcrypt-devel
+    - autoconf
+    - freetype
+    - gd
+    - libmcrypt
+    - libpng
+    - libpng-devel
+    - libjpeg
+    - libxml2
+    - libxml2-devel
+    - zlib
+    - curl
+    - curl-devel
+    - net-snmp-devel
+    - libjpeg-devel
+    - php-ldap
+    - openldap-devel
+    - openldap-servers
+    - openldap-clients
+    - freetype-devel
+    - gmp-devel
+
+- name: mkdir /tools
+  file:
+    dest: /tools
+    state: directory
+
+- name: Copy php source pkg 
+  copy:
+    src: php-{{ php_version }}.tar.gz
+    dest: /tools
+
+- name: Install php
+  shell: cd /tools && tar -zxf php-{{ php_version }}.tar.gz && cd php-{{ php_version }} &&
+         ./configure --prefix=/usr/local/php --with-config-file-path=/usr/local/php/etc/ --with-mysqli --with-pdo-mysql --with-mysql-sock=/usr/local/mysql/mysql.sock --with-iconv-dir --with-freetype-dir --with-jpeg-dir --with-png-dir --with-curl --with-gd --with-gmp --with-zlib --with-xmlrpc --with-openssl --without-pear --with-snmp --with-gettext --with-mhash --with-libxml-dir=/usr --with-fpm-user=www --with-fpm-group=www --enable-xml --enable-fpm  --enable-ftp --enable-bcmath --enable-soap --enable-shmop --enable-sysvsem --enable-sockets --enable-inline-optimization --enable-maintainer-zts --enable-mbregex --enable-mbstring --enable-pcntl --enable-zip --disable-fileinfo --disable-rpath --enable-libxml --enable-opcache --enable-mysqlnd &&
+        make && make install
+        
+- name: Copy php config file php-ini
+  copy:
+    src: php.ini
+    dest: /usr/local/php/etc/
+    force: yes
+  notify: restart php-fpm
+    
+- name: Copy php config file php-fpm
+  copy:
+    src: php-fpm.conf
+    dest: /usr/local/php/etc/
+    force: yes
+  notify: restart php-fpm
+  
+- name: Copy php php-fpm servers
+  copy:
+    src: php-fpm.service
+    dest: /usr/lib/systemd/system/
+    force: yes
+
+- name: systemctl start php service
+  service:
+    name: php-fpm
+    state: started
+    enabled: yes

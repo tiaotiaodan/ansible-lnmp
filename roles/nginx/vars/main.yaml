@@ -1,0 +1,6 @@
+---
+#nginx
+nginx_version: 1.16.1
+http_port: 80
+server_name: test-www.scajy.cn
+#

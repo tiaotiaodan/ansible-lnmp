@@ -1,0 +1,18 @@
+[localhost]
+192.168.200.131    ansible_host_pass='123456'
+
+
+[web1]
+192.168.200.132    ansible_host_pass='123456'
+192.168.200.133    ansible_host_pass='123456'
+
+[tomcat1]
+192.168.200.134    ansible_host_pass='123456'
+
+
+[mysql]
+192.168.200.135   ansible_host_pass='123456'
+
+[redis]
+192.168.200.136   ansible_host_pass='123456'
+

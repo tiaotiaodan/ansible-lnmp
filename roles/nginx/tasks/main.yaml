@@ -1,0 +1,78 @@
+---
+- name: mkdir /tools
+  file:
+    dest: /tools
+    state: directory
+
+- name: mkdir nginx log
+  file:
+    dest: /var/log/nginx
+    state: directory
+    
+- name: Copy nginx source pkg 
+  copy:
+    src: nginx-{{ nginx_version }}.tar.gz
+    dest: /tools
+
+- name: Install nginx
+  shell: cd /tools && tar -zxf nginx-{{ nginx_version }}.tar.gz && cd nginx-{{ nginx_version }} && 
+         ./configure --prefix=/usr/local/nginx --user=www --group=www --with-compat --with-file-aio --with-threads  --with-http_addition_module --with-http_auth_request_module --with-http_dav_module --with-http_flv_module  --with-http_gunzip_module --with-http_gzip_static_module --with-http_mp4_module --with-http_random_index_module --with-http_realip_module  --with-http_secure_link_module --with-http_slice_module --with-http_ssl_module --with-http_stub_status_module --with-http_sub_module --with-http_v2_module --with-mail --with-mail_ssl_module --with-stream --with-stream_realip_module --with-stream_ssl_module --with-stream_ssl_preread_module --with-file-aio --with-ipv6 --with-cc-opt='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC' --with-ld-opt='-Wl,-z,relro -Wl,-z,now -pie' &&
+         make && make install
+
+- name: Creating Users Group
+  group:
+    name: www
+    gid: 1050
+    state: present 
+
+- name: Creating Users
+  user:
+    name: www
+    groups: www
+    create_home: no
+    state: present
+    shell: /sbin/nologin
+
+- name: mkdir  /usr/local/nginx/conf/conf.d
+  file:
+    dest: /usr/local/nginx/conf/conf.d
+    state: directory
+    
+- name: Copy nginx config file
+  copy:
+    src: nginx.conf
+    dest: /usr/local/nginx/conf
+    force: yes
+  notify: reload nginx
+  
+- name: Copy nginx www.conf 
+  template:
+    src: www.conf
+    dest: /usr/local/nginx/conf/conf.d
+    force: yes
+  notify: reload nginx
+
+- name: Change ownership of nginx installation
+  file:
+    path: /usr/local/nginx
+    owner: www
+    group: www
+    state: directory
+    recurse: yes
+
+- name: Copy nginx systemctl service
+  copy:
+    src: nginx.service
+    dest: /usr/lib/systemd/system/
+    force: yes
+    
+- name: system reload file nginx
+  command: /bin/systemctl daemon-reload
+
+- name: systemctl start  nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+

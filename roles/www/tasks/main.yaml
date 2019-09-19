@@ -1,0 +1,18 @@
+---
+- name: mkdir www
+  file:
+    dest: /usr/local/nginx/html/www
+    state: directory
+    
+- name: unarchive  nginx  www  source pkg 
+  unarchive:
+    src: www.zip
+    dest: /usr/local/nginx/html/www/
+    
+- name: Change ownership of user nginx www installation
+  file:
+    path: /usr/local/nginx/html/www
+    owner: www
+    group: www
+    state: directory
+    recurse: yes
