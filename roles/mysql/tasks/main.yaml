@@ -132,10 +132,7 @@
   shell: /bin/systemctl daemon-reload 
 
 - name:   echo mysql bin file 
-  shell: echo 'PATH=/usr/local/mysql/bin:$PATH' >> /etc/profile 
-
-- name: reload profile file
-  shell: /bin/bash /etc/profile
+  shell: echo 'PATH=/usr/local/mysql/bin:$PATH' >> /etc/profile && source /etc/profile
 
 - name:  systemctl start mysql  service
   service:
